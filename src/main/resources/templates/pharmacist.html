@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Pharmacist Home</title>
+  <link th:href="@{pharmacist.css}" rel="stylesheet" />
+</head>
+<body>
+<div class="container">
+  <h1>I am Pharmacist</h1>
+  <div class="buttons">
+    <a th:href="@{/pharmacist/makeRequest}"><button class="create">Requests</button></a>
+    <a th:href="@{/pharmacist/inventory}"><button class="list">List all Products</button></a>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Manufacturer Home</title>
+    <link th:href="@{manufacturer.css}" rel="stylesheet" />
+</head>
+<body>
+<div class="container">
+    <h1>I am Manufacturer</h1>
+    <div class="buttons">
+        <a th:href="@{/manufacturer/requests}"><button class="create">Requests</button></a>
+        <a th:href="@{/manufacturer/inventory}"><button class="list">List all Products</button></a>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Pending Requests</title>
+  <link rel="@{show_requests.css}">
+</head>
+<body>
+<h1>Pending Requests</h1>
+<div th:if="${requests}">
+  <ul>
+    <li th:each="request : ${requests}" style="display: flex; flex-direction: column; justify-content: center;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <p>Request ID: <span th:text="${request.req_id}"></span></p>
+          <p>From: <span th:text="${request.req_from}"></span></p>
+          <p>Product Name: <span th:text="${request.productName}"></span></p>
+          <p>Number of Items: <span th:text="${request.numOfItem}"></span></p>
+          <p>Message: <span th:text="${request.message}"></span></p>
+        </div>
+        <div>
+          <a th:href="@{/create_product_page(req_id=${request.req_id})}" style="text-decoration: none;">
+            <button class="list" th:value="${request.req_id}" style="margin-left: 10px;">Fulfill request</button>
+          </a>
+        </div>
+      </div>
+    </li>
+  </ul>
+</div>
+<p th:unless="${requests}">No pending requests.</p>
+</body>
+</html>

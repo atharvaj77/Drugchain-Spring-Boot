@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <title>distributor create product</title>
+  <link th:href="@{dcreate_product.css}" rel="stylesheet"/>
+</head>
+
+<body>
+<form method="post" th:if="${notvalidProduct}">
+  <h1>Product Unavailable</h1>
+  <div class="thank-you-box">
+    <div class="smiley">&#x1F603;</div>
+    <div class="thank-you-text">Product Unavailable</div>
+  </div>
+</form>
+<form method="post" th:unless="${notvalidProduct}">
+  <h1>Product Details Form</h1>
+  <div class="input-group">
+    <label for="batch-number">Batch Number:</label>
+    <input type="text" id="batch-number" name="batch-number" required>
+  </div>
+  <input type="submit">
+
+  <div class="thank-you-box" th:if="${submitted}">
+    <div class="smiley">&#x1F603;</div>
+    <div class="thank-you-text">Thank you for submitting your details!</div>
+  </div>
+</form>
+</body>
+
+</html>

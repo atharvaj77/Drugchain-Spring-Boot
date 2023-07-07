@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Distributor pending requests</title>
+  <link th:href="@{/dshow_requests.css}" rel="stylesheet" />
+</head>
+<body>
+<h1>Pending Requests</h1>
+<th:block th:if="${requests}">
+  <ul>
+    <th:block th:each="request : ${requests}">
+      <li style="display: flex; flex-direction: column; justify-content: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <p>Request ID: <span th:text="${request.req_id}"></span></p>
+            <p>From: <span th:text="${request.req_from}"></span></p>
+            <p>Product Name: <span th:text="${request.productName}"></span></p>
+            <p>Number of Items: <span th:text="${request.numOfItem}"></span></p>
+            <p>Message: <span th:text="${request.message}"></span></p>
+          </div>
+          <div>
+            <a th:href="@{/dcreate_product_page(req_id=${request.req_id})}" style="text-decoration: none;">
+              <button class="list" value="{{request.req_id}}" style="margin-left: 10px;">Fulfill request</button>
+            </a>
+          </div>
+        </div>
+      </li>
+    </th:block>
+  </ul>
+</th:block>
+
+<th:block th:unless="${requests}">
+  <p>No pending requests.</p>
+</th:block>
+</body>
+</html>
