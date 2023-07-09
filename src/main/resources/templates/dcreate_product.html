@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<form method="post" th:if="${notvalidProduct}">
+<form th:if="${notvalidProduct}" action="/distributor/createProduct" method="post">
   <h1>Product Unavailable</h1>
   <div class="thank-you-box">
     <div class="smiley">&#x1F603;</div>
