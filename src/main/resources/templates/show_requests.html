@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <title>Pending Requests</title>
-  <link rel="@{show_requests.css}">
+  <link th:href="@{show_requests.css}" rel="stylesheet" />
 </head>
 <body>
 <h1>Pending Requests</h1>
@@ -18,7 +18,7 @@
           <p>Message: <span th:text="${request.message}"></span></p>
         </div>
         <div>
-          <a th:href="@{/create_product_page(req_id=${request.req_id})}" style="text-decoration: none;">
+          <a th:href="@{/manufacturer/createProduct(req_id=${request.req_id})}" style="text-decoration: none;">
             <button class="list" th:value="${request.req_id}" style="margin-left: 10px;">Fulfill request</button>
           </a>
         </div>

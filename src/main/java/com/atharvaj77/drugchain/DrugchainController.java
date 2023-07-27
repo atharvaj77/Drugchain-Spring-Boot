@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.sql.RowSet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -26,12 +25,15 @@ import java.util.concurrent.ExecutionException;
 
 @Controller
 public class DrugchainController {
+    DrugchainService drugchainService;
+    BlockchainService blockchainService;
+
 
     @Autowired
-    private DrugchainService drugchainService;
-
-    @Autowired
-    private BlockchainService blockchainService;
+    DrugchainController(DrugchainService drugchainService, BlockchainService blockchainService) {
+        this.drugchainService = drugchainService;
+        this.blockchainService = blockchainService;
+    }
 
 
     @GetMapping("/")
@@ -63,7 +65,6 @@ public class DrugchainController {
 
     @GetMapping("/manufacturer/createProduct")
     public String manufacturerCreateProduct(){
-        //TODO: Write Create Product Logic for manufacturer
         return "create_product";
     }
 
@@ -71,24 +72,26 @@ public class DrugchainController {
     public String createProductPage(@RequestParam("req_id") String requestId,
                                     @RequestParam("manufacturer-date") String mfgDate,
                                     @RequestParam("expiry-date") String expiryDate,
-                                    @RequestParam("batch-number") String batchNo) throws ExecutionException, InterruptedException {
+                                    @RequestParam("batch-number") String batchNo) throws Exception {
 
         // Retrieve data from the database or other sources as needed
         Map<String,Object> requestData = drugchainService.getPendingRequestData(requestId);
         String itemName = requestData.get("productName").toString();
         int numberUnits = Integer.parseInt( requestData.get("numOfItem").toString());
+        //TODO: Implement user id logic here
         //String userId = // Retrieve the user ID from session
+        //User user = drugchainService.getUser(getSessionId());
+        User user = drugchainService.getUser("Wxi9MY3LQbezsJlcDNc6P6JXyaw2");
 
-                // Perform the necessary operations
         String hist = String.format("manufacturer: %s, address: %s, transferred_to: %s, address: %s, time: %s",
                 user.getUsername(), user.getPublicAddress(), requestData.get("req_from"),
                 requestData.get("web3Address_from"), LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy, HH:mm:ss")));
 
-        String transactionId = productService.createProduct(timeStamp, itemName, mfgDate, expiryDate, batchNo,
-                numberUnits, hist, -1, user.getPublicAddress(), requestData.get("web3Address_from").toString());
+        String transactionId = blockchainService.createProduct(itemName, mfgDate, expiryDate, batchNo,
+                BigInteger.valueOf(numberUnits), hist, user.getPublicAddress(), requestData.get("web3Address_from").toString());
 
-        int pid = productService.getLastProductID(requestData.get("web3Address_from").toString());
-        blockchainService.updateHistory(pid + 1, hist, user.getPublicAddress());
+        BigInteger pid = blockchainService.getLastProductId(requestData.get("web3Address_from").toString());
+        blockchainService.updateHistory(BigInteger.valueOf(Long.parseLong(String.valueOf(pid)) + 1), transactionId, user.getPublicAddress());
         drugchainService.deletePendingRequest(requestId);
 
         // Return the appropriate response
@@ -113,13 +116,25 @@ public class DrugchainController {
     }
 
     @GetMapping("/manufacturer/requests")
-    public String manufacturerRequests(){
+    public String manufacturerRequests(Model model) throws ExecutionException, InterruptedException {
+        //String manufacturerId = getSessionId();
+        String manufacturerId = "Wxi9MY3LQbezsJlcDNc6P6JXyaw2";
+
+        List<Map<String,Object>> pendingRequests = drugchainService.getPendingRequests(manufacturerId);
+
+        model.addAttribute("requests", pendingRequests);
         return "show_requests";
     }
 
     @GetMapping("/manufacturer/inventory")
-    public String manufacturerInventory(){
+    public String manufacturerInventory(Model model){
         return "inventory";
+    }
+
+    @GetMapping("/createProductPage")
+    public String createProductPage(@RequestParam String req_id, Model model){
+        model.addAttribute("notValidProduct",false);
+        return "create_product";
     }
 
     //Distributor Handler
@@ -144,19 +159,19 @@ public class DrugchainController {
 
         Map<String, Object> validProduct = null;
 
-        for (Map<String, Object> item : allProducts) {
+        /*for (Object item : allProducts) {
             if (item.get("name").equals(name) && Integer.parseInt((String) item.get("numberUnits")) > items) {
-                validProduct = item;
+                validProduct = (Map<String, Object>) item;
                 break;
             }
-        }
+        }*/
 
         if (validProduct == null) {
             model.addAttribute("notvalidProduct", true);
-            return "distributor_create_product";
+            return "dcreate_product";
         } else {
             model.addAttribute("validProduct", validProduct);
-            return "distributor_create_product";
+            return "dcreate_product";
         }
     }
 
@@ -186,7 +201,7 @@ public class DrugchainController {
 
             String pid = String.valueOf(blockchainService.getLastProductId((String) requestData.get("web3Address_from")));
 
-            updateHistory(pid, transactionId, user.getPublicAddress());
+            blockchainService.updateHistory(BigInteger.valueOf(Long.parseLong(pid)), hist, user.getPublicAddress());
 
             model.addAttribute("submitted", true);
             model.addAttribute("p_id", pid);
@@ -199,10 +214,10 @@ public class DrugchainController {
         return "redirect:/distributor/createProduct?req_id=" + requestId;
     }
 
-    @GetMapping("/distributor/makerequest")
-    public String showMakeRequest(Model model) {
-        List<Map<String, Object>> manufacturers = getUserService().getManufacturers();
-        User user = getUserService().getUser(getSessionId());
+    @GetMapping("/distributor/makeRequest")
+    public String showMakeRequest(Model model) throws ExecutionException, InterruptedException {
+        List<Map<String, Object>> manufacturers = drugchainService.getManufacturers();
+        User user = drugchainService.getUser("QXbVfYLuZ8NQvqx960FzlRP5mS23");
         String userType = user.getUserType();
 
         model.addAttribute("manufacturers", manufacturers);
@@ -211,14 +226,15 @@ public class DrugchainController {
         return "make_request";
     }
 
-    @PostMapping("/distributor/makerequest")
-    public String processMakeRequest(@RequestParam("item-name") String itemName,
+    @PostMapping("/distributor/makeRequest")
+    public String distributorMakeRequest(@RequestParam("item-name") String itemName,
                                      @RequestParam("manufacturer_id") String manufacturerId,
                                      @RequestParam("additional_message") String additionalMessage,
                                      @RequestParam("number-units") String numOfUnits) {
 
         try {
-            User user = getUserService().getUser(getSessionId());
+            //User user = drugchainService.getUser(getSessionId());
+            User user = drugchainService.getUser("QXbVfYLuZ8NQvqx960FzlRP5mS23");
 
             Map<String, Object> data = new java.util.HashMap<String, Object>(Map.of(
                     "req_from", user.getUsername(),
@@ -241,11 +257,11 @@ public class DrugchainController {
             e.printStackTrace();
         }
 
-        return "redirect:/distributor/makerequest";
+        return "redirect:/distributor/makeRequest";
     }
 
 
-    @GetMapping("/distributor/pendingRequests")
+    @GetMapping("/distributor/requests")
     public String showPendingRequests(Model model) throws ExecutionException, InterruptedException {
         String distributorId = getSessionId();
 
@@ -267,10 +283,10 @@ public class DrugchainController {
     }
 
     @GetMapping("/pharma/makerequest")
-    public String pmakeRequest(Model model) {
-        List<Map<String, Object>> distributors = getUserService().getDistributors();
+    public String pmakeRequest(Model model) throws ExecutionException, InterruptedException {
+        List<Map<String, Object>> distributors = drugchainService.getDistributors();
 
-        User user = getUserService().getUser(getSessionId());
+        User user = drugchainService.getUser(getSessionId());
         String userType = user.getUserType();
 
         model.addAttribute("manufacturers", distributors);
@@ -280,13 +296,13 @@ public class DrugchainController {
     }
 
     @PostMapping("/pharma/makerequest")
-    public String processMakeRequest(@RequestParam("item-name") String itemName,
+    public String pharmacistMakeRequest(@RequestParam("item-name") String itemName,
                                      @RequestParam("manufacturer_id") String distributorId,
                                      @RequestParam("additional_message") String additionalMessage,
                                      @RequestParam("number-units") String numOfUnits) {
 
         try {
-            User user = getUserService().getUser(getSessionId());
+            User user = drugchainService.getUser(getSessionId());
 
             Map<String, Object> data = new java.util.HashMap<String, Object>(Map.of(
                     "req_from", user.getUsername(),
@@ -314,11 +330,16 @@ public class DrugchainController {
 
     @GetMapping("/pharma/inventory")
     public String pshowInventory(Model model) throws Exception {
-        User user = getUserService().getUser(getSessionId());
+        User user = drugchainService.getUser(getSessionId());
         List productData = blockchainService.getAllProducts(user.getPublicAddress());
 
         model.addAttribute("productData", productData);
-        return "list_of_products";
+        return "inventory";
+    }
+
+    private String getSessionId() {
+        // TODO: Implement session logic
+        return null;
     }
 
 }

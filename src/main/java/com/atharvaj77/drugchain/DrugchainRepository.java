@@ -40,10 +40,17 @@ public class DrugchainRepository {
         else return null;
     }
 
-    public String updateRequestDetails(String requestId,Map<String,Object> pendingRequest) throws ExecutionException, InterruptedException {
+
+    public String createPendingRequest(Map<String,Object> requestData) throws ExecutionException, InterruptedException {
+        Firestore dbFirestore = FirestoreClient.getFirestore();
+        ApiFuture<DocumentReference> documentReferenceApiFuture = dbFirestore.collection("pendingRequests").add(requestData);
+        return documentReferenceApiFuture.get().getId();
+    }
+
+    public void updateRequestDetails(String requestId, Map<String,Object> pendingRequest) throws ExecutionException, InterruptedException {
         Firestore dbFirestore = FirestoreClient.getFirestore();
         ApiFuture<WriteResult> collectionsApiFuture = dbFirestore.collection("pendingRequests").document(requestId).set(pendingRequest);
-        return collectionsApiFuture.get().getUpdateTime().toString();
+        collectionsApiFuture.get();
     }
 
     public void deleteRequestDetails(String reqId){
@@ -68,12 +75,23 @@ public class DrugchainRepository {
         return pendingReqArr;
     }
 
-    public String creatependingRequest(Map<String,Object> requestData){
 
+    public List<Map<String,Object>> getUserForType(String userType) throws ExecutionException, InterruptedException {
+        Firestore firestore = FirestoreClient.getFirestore();
+        CollectionReference pendingRequestsCollection = firestore.collection("users");
+
+        Query query = pendingRequestsCollection.whereEqualTo("userType", userType);
+        ApiFuture<QuerySnapshot> querySnapshot = query.get();
+
+        List<Map<String, Object>> pendingReqArr = new ArrayList<>();
+
+        for (DocumentSnapshot document : querySnapshot.get().getDocuments()) {
+            Map<String, Object> reqData = document.getData();
+            pendingReqArr.add(reqData);
+        }
+
+        return pendingReqArr;
     }
-
-
-
 
 
 }
